@@ -14,10 +14,14 @@ const double r2 = 0.8;
 const double l  = 5.0;
 
 void
-create_reference_cylinder(const unsigned int         n_sections,
+create_reference_cylinder(const bool                 do_transition,
+                          const unsigned int         n_sections,
                           std::vector<Point<3>> &    vertices_3d,
                           std::vector<CellData<3>> & cell_data_3d)
 {
+  if(do_transition)
+    printf("WARNING: Transition has not been implemented yet (TODO)!\n");
+
   // position of auxiliary point to achieve an angle of 120 degrees in corner
   // of inner cell
   const double radius = 1;
@@ -117,12 +121,13 @@ void
 create_cylinder(const double               radius1,
                 const double               radius2,
                 const double               length,
+                const bool                 do_transition,
                 std::vector<Point<3>> &    vertices_3d,
                 std::vector<CellData<3>> & cell_data_3d)
 {
   // create reference cylinder with n_sections subdivisions
   int n_sections = length / std::min(radius1, radius2);
-  create_reference_cylinder(n_sections, vertices_3d, cell_data_3d);
+  create_reference_cylinder(do_transition, n_sections, vertices_3d, cell_data_3d);
 
   // transform cylinder (here: simple scaling)
   for(auto & point : vertices_3d)
@@ -144,6 +149,7 @@ main(int argc, char ** argv)
 {
   // default size of cylinder
   double radius_1 = r1, radius_2 = r2, length = l;
+  bool   do_transition = false;
 
   // read new sizes of geometry from command line
   if(argc > 1)
@@ -152,10 +158,12 @@ main(int argc, char ** argv)
     radius_2 = atof(argv[2]);
   if(argc > 3)
     length = atof(argv[3]);
+  if(argc > 4)
+    do_transition = atoi(argv[4]);
 
   std::vector<CellData<3>> cell_data_3d;
   std::vector<Point<3>>    vertices_3d;
-  create_cylinder(radius_1, radius_2, length, vertices_3d, cell_data_3d);
+  create_cylinder(radius_1, radius_2, length, do_transition, vertices_3d, cell_data_3d);
 
   // now actually create the triangulation
   SubCellData      subcell_data;
