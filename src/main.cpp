@@ -14,12 +14,9 @@ const double r2 = 0.8;
 const double l  = 5.0;
 
 void
-create_cylinder(const double               radius1,
-                const double               radius2,
-                const double               length,
-                const unsigned int         n_sections,
-                std::vector<Point<3>> &    vertices_3d,
-                std::vector<CellData<3>> & cell_data_3d)
+create_reference_cylinder(const unsigned int         n_sections,
+                          std::vector<Point<3>> &    vertices_3d,
+                          std::vector<CellData<3>> & cell_data_3d)
 {
   // position of auxiliary point to achieve an angle of 120 degrees in corner
   // of inner cell
@@ -94,16 +91,12 @@ create_cylinder(const double               radius1,
   for(unsigned int s = 0; s <= n_sections; s++)
   {
     const double       beta  = (1.0 * s) / n_sections;
-    const double       alpha = 1.0 - beta;
     const unsigned int shift = s * tria_2d.n_vertices();
     for(unsigned int i = 0; i < tria_2d.n_vertices(); ++i)
     {
-      const double r = beta * radius2 + alpha * radius1;
-      const double l = beta * length;
-
-      vertices_3d[shift + i][0] = r * tria_2d.get_vertices()[i][0];
-      vertices_3d[shift + i][1] = r * tria_2d.get_vertices()[i][1];
-      vertices_3d[shift + i][2] = l;
+      vertices_3d[shift + i][0] = tria_2d.get_vertices()[i][0];
+      vertices_3d[shift + i][1] = tria_2d.get_vertices()[i][1];
+      vertices_3d[shift + i][2] = beta;
     }
   }
 
@@ -120,6 +113,31 @@ create_cylinder(const double               radius1,
     }
 }
 
+void
+create_cylinder(const double               radius1,
+                const double               radius2,
+                const double               length,
+                std::vector<Point<3>> &    vertices_3d,
+                std::vector<CellData<3>> & cell_data_3d)
+{
+  // create reference cylinder with n_sections subdivisions
+  int n_sections = length / std::min(radius1, radius2);
+  create_reference_cylinder(n_sections, vertices_3d, cell_data_3d);
+
+  // transform cylinder (here: simple scaling)
+  for(auto & point : vertices_3d)
+  {
+    const double beta  = point[2];
+    const double alpha = 1.0 - beta;
+
+    const double r = beta * radius2 + alpha * radius1;
+    const double l = beta * length;
+
+    point[0] = r * point[0];
+    point[1] = r * point[1];
+    point[2] = l;
+  }
+}
 
 int
 main(int argc, char ** argv)
@@ -135,12 +153,9 @@ main(int argc, char ** argv)
   if(argc > 3)
     length = atof(argv[3]);
 
-  // determine number of intersections of cylinder
-  const unsigned int n_sections = length / std::min(radius_1, radius_2);
-
   std::vector<CellData<3>> cell_data_3d;
   std::vector<Point<3>>    vertices_3d;
-  create_cylinder(radius_1, radius_2, length, n_sections, vertices_3d, cell_data_3d);
+  create_cylinder(radius_1, radius_2, length, vertices_3d, cell_data_3d);
 
   // now actually create the triangulation
   SubCellData      subcell_data;
